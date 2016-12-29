@@ -1,4 +1,5 @@
-#[derive(Debug, Default)]
+use super::interconnect;
+
 pub struct Cpu {
     reg_a: u8, // Accumlator
     reg_f: RegFlag, // Flags
@@ -13,18 +14,37 @@ pub struct Cpu {
 
     reg_sp: u16, // Stack Pointer
     reg_pc: u16, // Program Counter
+
+    interconnect: interconnect::Interconnect,
 }
 
 impl Cpu {
-    pub fn new() -> Self {
-        Cpu::default()
+    pub fn new(interconnect: interconnect::Interconnect) -> Self {
+        Cpu {
+            reg_a: 0,
+            reg_f: RegFlag::default(),
+
+            reg_b: 0,
+            reg_c: 0,
+            reg_d: 0,
+            reg_e: 0,
+            reg_h: 0,
+            reg_l: 0,
+            reg_sp: 0,
+            reg_pc: 0,
+
+            interconnect: interconnect,
+        }
+    }
+
+    pub fn run(&mut self) {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct RegFlag {
-    Carry: bool,
-    HalfCarry: bool,
-    AddSub: bool,
-    Zero: bool,
+    carry: bool,
+    half_carry: bool,
+    add_sub: bool,
+    zero: bool,
 }

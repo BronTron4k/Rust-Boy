@@ -1,6 +1,6 @@
 mod cpu;
-
-use cpu::Cpu;
+mod gameboy;
+mod interconnect;
 
 use std::env;
 use std::fs;
@@ -12,12 +12,11 @@ fn main() {
     let boot_file_name = env::args().nth(1).unwrap();
     let rom_file_name = env::args().nth(2).unwrap();
 
-    let bootloader = read_bin(boot_file_name);
+    let boot_rom = read_bin(boot_file_name);
     let rom = read_bin(rom_file_name);
 
-    let mut cpu = Cpu::new();
-
-    println!("{:#?}", cpu);
+    let mut game_boy = gameboy::GameBoy::new(boot_rom);
+    game_boy.run();
 }
 
 fn read_bin<P: AsRef<Path>>(path: P) -> Vec<u8> {
