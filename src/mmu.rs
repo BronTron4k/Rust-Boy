@@ -58,30 +58,106 @@ impl Gpu {
 
 struct Apu {
     enabled: bool,
-    chan1: Chan1,
+    pulse_a: PulseA,
 }
 
 impl Apu {
     fn new() -> Self {
         Apu {
             enabled: false,
-            chan1: Chan1,
+            pulse_a: PulseA::new(),
         }
     }
 
     fn write_byte(&mut self, addr: u8, value: u8) {
         match addr {
-            0x26 => {
-                if value == 0x80 {
-                    self.enabled = value >> 7 == 1;
-                    println!("Control Master: {:?}", self.enabled)
+            0x11 => {
+                self.pulse_a.sound_length = 64 - (value & 0x3F);
+
+                match value >> 6 {
+                    0 => self.pulse_a.wave_duty = WaveDuty::HalfQuarter,
+                    1 => self.pulse_a.wave_duty = WaveDuty::Quarter,
+                    2 => self.pulse_a.wave_duty = WaveDuty::Half,
+                    3 => self.pulse_a.wave_duty = WaveDuty::ThreeQuarters,
+                    _ => panic!()
                 }
             },
+            0x12 => {
+                self.pulse_a.envelope.count = value & 0x7;
+                self.pulse_a.envelope.direction = match (value & 0x8) >> 3 {
+                    0 => Direction::Decreasing,
+                    1 => Direction::Increasing,
+                    _ => panic!("{:#x}", (value & 0x8) >> 3)
+                };
+            }
+            0x25 => {
+            },
+            0x26 => self.enabled = value >> 7 == 1,
             _ => panic!("Unimpletemented Apu write at address: {:#x}: {:#x}",addr, value)
         }
     }
 }
 
-struct chan1 {
-    wave_duty:
+#[derive(Debug)]
+struct PulseA {
+    wave_duty: WaveDuty,
+    sound_length: u8,
+    envelope: Envelope
+}
+
+struct PulseB {
+    wave_duty: WaveDuty,
+    sound_length: u8,
+    envelope: Envelope
+}
+
+impl PulseA {
+    fn new() -> Self {
+        PulseA {
+            wave_duty: WaveDuty::Half,
+            sound_length: 0,
+            envelope: Envelope::new()
+        }
+    }
+}
+
+impl PulseB {
+    fn new() -> Self {
+        PulseB {
+            wave_duty: WaveDuty::Half,
+            sound_length: 0,
+            envelope: Envelope::new()
+        }
+    }
+}
+
+#[derive(Debug)]
+enum WaveDuty {
+    HalfQuarter,
+    Quarter,
+    Half,
+    ThreeQuarters,
+}
+
+#[derive(Debug)]
+struct Envelope {
+    volume: u8,
+    direction: Direction,
+    count: u8,
+}
+
+impl Envelope {
+    fn new () -> Self {
+        Envelope {
+            volume: 0,
+            direction: Direction::Increasing,
+            count: 0,
+        }
+    }
+}
+
+#[derive(Debug)]
+enum Direction {
+    Increasing,
+    Decreasing,
 }

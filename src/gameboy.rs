@@ -1,29 +1,34 @@
 use super::cpu;
-use super::interconnect;
+use super::mmu;
+
+
 
 pub struct GameBoy {
     cpu: cpu::Cpu,
 }
 
 impl GameBoy {
-    pub fn new(boot_rom: Vec<u8>) -> Self {
+    pub fn new() -> Self {
         GameBoy {
-            cpu: cpu::Cpu::new(interconnect::Interconnect::new(load_boot_rom(boot_rom))),
+            cpu: cpu::Cpu::new(),
         }
     }
 
-    pub fn run(&mut self) {
-       self.cpu.run();
+    pub fn power_on(&mut self, boot_rom: Vec<u8>, game_rom: Vec<u8>) {
+        self.load_rom(game_rom);
+        self.load_rom(boot_rom);
+
+        self.run()
     }
 
-}
-
-fn load_boot_rom(boot_rom_data: Vec<u8>) -> [u8; interconnect::BOOT_ROM_SIZE] {
-    let mut boot_rom = [0; interconnect::BOOT_ROM_SIZE];
-
-    for (idx, op) in boot_rom_data.iter().enumerate() {
-        boot_rom[idx] = *op;
+    fn run(&mut self) {
+        self.cpu.run();
     }
 
-    boot_rom
+    fn load_rom(&mut self, rom_data: Vec<u8>) {
+        for (idx, op) in rom_data.iter().enumerate().take(0x2000) {
+            self.cpu.mmu.write_byte(idx as u16, *op)
+        }
+    }
 }
+
