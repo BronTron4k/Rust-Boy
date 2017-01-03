@@ -4,3 +4,4 @@ version = "0.1.0"
 authors = ["brontron4k"]
 
 [dependencies]
+bitflags = "0.7"

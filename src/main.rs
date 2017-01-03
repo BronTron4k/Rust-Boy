@@ -1,6 +1,11 @@
+#[macro_use]
+extern crate bitflags;
+
 mod cpu;
 mod gameboy;
 mod mmu;
+mod apu;
+mod gpu;
 
 use std::env;
 use std::fs;
