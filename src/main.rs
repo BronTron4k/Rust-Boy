@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate bitflags;
+extern crate glium;
 
 mod cpu;
 mod gameboy;

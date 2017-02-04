@@ -3,6 +3,12 @@ const BG_MAP_SIZE: usize = 0x400;
 const SCREEN_HEIGHT: usize = 144;
 const SCREEN_WIDTH: usize = 160;
 const SCREEN_PIXELS: usize = SCREEN_WIDTH * SCREEN_HEIGHT;
+const TILE_WIDTH:  usize = 8;
+const TILE_HEIGHT: usize = 8;
+const TILE_PIXELS: usize = TILE_WIDTH * TILE_HEIGHT;
+const SCREEN_BUFFER_HEIGHT: usize = 32;
+const SCREEN_BUFFER_WIDTH: usize = 32;
+const SCREEN_BUFFER_TILES: usize = SCREEN_BUFFER_WIDTH * SCREEN_BUFFER_HEIGHT;
 
 #[derive(Clone, Copy)]
 struct Tile {
@@ -22,7 +28,7 @@ pub struct Gpu {
 
     mode: Mode,
 
-    screen_buffer: [Color; SCREEN_PIXELS],
+    screen_buffer: [Tile; SCREEN_BUFFER_TILES],
 }
 
 impl Gpu {
@@ -40,7 +46,7 @@ impl Gpu {
 
             mode: Mode::AccessOam,
 
-            screen_buffer: [Color::White; SCREEN_PIXELS],
+            screen_buffer: [Tile { data: [0; 16] }; SCREEN_BUFFER_TILES]
         }
     }
 

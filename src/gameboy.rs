@@ -1,14 +1,25 @@
 use super::cpu;
 use super::mmu;
 
+use glium;
+use glium::DisplayBuild;
+
 pub struct GameBoy {
     cpu: cpu::Cpu,
+    display: glium::Display,
 }
 
 impl GameBoy {
     pub fn new() -> Self {
+        let display = glium::glutin::WindowBuilder::new()
+            .with_dimensions(160, 144)
+            .with_title("Rust Boy")
+            .build_glium()
+            .unwrap();
+
         GameBoy {
             cpu: cpu::Cpu::new(),
+            display: display,
         }
     }
 
