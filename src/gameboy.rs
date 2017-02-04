@@ -1,8 +1,6 @@
 use super::cpu;
 use super::mmu;
 
-
-
 pub struct GameBoy {
     cpu: cpu::Cpu,
 }

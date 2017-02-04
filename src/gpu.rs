@@ -1,9 +1,16 @@
-pub const TILE_MAP_SIZE: usize = 0x1000;
-pub const BG_MAP_SIZE: usize = 0x400;
+const TILE_MAP_SIZE: usize = 0x180;
+const BG_MAP_SIZE: usize = 0x400;
+const SCREEN_HEIGHT: usize = 144;
+const SCREEN_WIDTH: usize = 160;
+const SCREEN_PIXELS: usize = SCREEN_WIDTH * SCREEN_HEIGHT;
+
+#[derive(Clone, Copy)]
+struct Tile {
+    data: [u8; 16],
+}
 
 pub struct Gpu {
-    tile_map_0: [u8; TILE_MAP_SIZE],
-    tile_map_1: [u8; TILE_MAP_SIZE],
+    tile_map: [Tile; TILE_MAP_SIZE],
     bg_map_0: [u8; BG_MAP_SIZE],
     bg_map_1: [u8; BG_MAP_SIZE],
     bg_palette: Palette,
@@ -13,14 +20,15 @@ pub struct Gpu {
     scroll_x: u8,
     scroll_y: u8,
 
-    ly: u8,
+    mode: Mode,
+
+    screen_buffer: [Color; SCREEN_PIXELS],
 }
 
 impl Gpu {
     pub fn new() -> Self {
         Gpu {
-            tile_map_0: [0; TILE_MAP_SIZE],
-            tile_map_1: [0; TILE_MAP_SIZE],
+            tile_map: [Tile {data: [0; 16]}; TILE_MAP_SIZE],
             bg_map_0: [0; BG_MAP_SIZE],
             bg_map_1: [0; BG_MAP_SIZE],
             bg_palette: Palette::new(),
@@ -29,7 +37,10 @@ impl Gpu {
 
             scroll_x: 0,
             scroll_y: 0,
-            ly: 0,
+
+            mode: Mode::AccessOam,
+
+            screen_buffer: [Color::White; SCREEN_PIXELS],
         }
     }
 
@@ -37,7 +48,7 @@ impl Gpu {
         match addr >> 8 {
             0xFF => {
                 match addr & 0xFF {
-                    0x44 => self.ly,
+                    0x44 => self.lcd.current_line,
                     _ => panic!("Unimplemented GPU Register read at {:04X}", addr),
                 }
             },
@@ -47,19 +58,33 @@ impl Gpu {
 
     pub fn write_byte(&mut self, addr: u16, value: u8) {
         match addr >> 8 {
-            0x80...0x87 => self.tile_map_0[(addr-0x8000) as usize] = value,
-            0x88...0x8F => {
-                self.tile_map_0[(addr-0x8000) as usize] = value;
-                self.tile_map_1[(addr-0x8800) as usize] = value;
+            0x80...0x97 => {
+                let rel_addr = addr - 0x8000;
+                let tile = &mut self.tile_map[(rel_addr) as usize / 16];
+                tile.data[rel_addr as usize % 16] = value;
             },
-            0x90...0x97 => self.tile_map_1[(addr-0x8800) as usize] = value,
             0x98...0x9B => self.bg_map_0[(addr - 0x9800) as usize] = value,
             0x9C...0x9F => self.bg_map_0[(addr - 0x9C00) as usize] = value,
             0xFF => {
                 match addr & 0xFF {
                     0x40 => { // LCD Control
-                        self.lcd.controls = Controls::from_bits_truncate(value);
-                    }
+                        let new_controls = Controls::from_bits_truncate(value);
+
+                        if !new_controls.contains(LCD_ENABLE) &&
+                            self.lcd.controls.contains(LCD_ENABLE) {
+                            if self.mode != Mode::VBlank {
+                                panic!("Cannot turn off LCD outside of VBLANK")
+                            } else {
+                                self.lcd.current_line = 0;
+                            }
+                        }
+
+                        if new_controls.contains(LCD_ENABLE) &&
+                            !self.lcd.controls.contains(LCD_ENABLE) {
+                        }
+
+                        self.lcd.controls = new_controls;
+                    },
                     0x42 => self.scroll_y = value,
                     0x47 => {
                         self.bg_palette.color_0 = Color::from_u8((value >> 0) & 0x3);
@@ -94,7 +119,7 @@ impl Palette {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Copy, Debug)]
 enum Color {
     White,
     LightGray,
@@ -116,12 +141,14 @@ impl Color {
 
 struct Lcd {
      controls: Controls,
+     current_line: u8,
 }
 
 impl Lcd {
     fn new() -> Self {
         Lcd {
             controls: Controls::empty(),
+            current_line: 0,
         }
     }
 }
@@ -137,4 +164,12 @@ bitflags! {
         const SPRINT_ENABLE     = 1 << 1,
         const BG_ENABLE         = 1 << 0,
     }
+}
+
+#[derive(PartialEq)]
+enum Mode {
+    AccessOam,
+    AccessVram,
+    HBlank,
+    VBlank,
 }

@@ -5,3 +5,4 @@ authors = ["brontron4k"]
 
 [dependencies]
 bitflags = "0.7"
+sdl2 = "0.27"

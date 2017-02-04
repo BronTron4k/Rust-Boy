@@ -42,6 +42,7 @@ impl Mmu {
     }
 
     pub fn write_byte(&mut self, addr: u16, value: u8) {
+        if addr == 0xFFFF { panic!("This shouldn't happen yet!")};
         match addr >> 8 {
             0x00...0x7F => self.rom[addr as usize] = value,
             0x80...0x9F => self.gpu.write_byte(addr, value),
